@@ -1,0 +1,12 @@
+.card {
+    position: relative;
+    border: 1px solid rgb(0 0 0 / 35%) !important;
+}
+/*li.social-icons-linkedin i {*/
+/*    font-size: 41px;*/
+/*}*/
+
+.btn-primary:hover, .btn-primary.hover{
+    background-color: #04486e !important;
+    border-color: #046eac !important;
+}
