@@ -155,6 +155,7 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:5176',
   'http://localhost:5173',
+  'https://jobizzatech.vercel.app',
   process.env.CLIENT_URL
 ].filter(Boolean);
 
@@ -167,7 +168,13 @@ app.use(cors({
     }
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Pre-flight OPTIONS handling for CORS
+app.options('*', cors());
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -178,9 +185,7 @@ app.use(session({
   saveUninitialized: false,
   cookie: { secure: false }
 }));
-app.use('/api/*', (req, res) => {
-  res.status(404).json({ message: 'API Route Not Found' });
-});
+
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -194,7 +199,7 @@ app.use('/api/team', teamRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/contact', contactRoutes);
 
-// Root Status & Health Check Route (Fixes 'Cannot GET /')
+// Root Status & Health Check Routes
 app.get('/', (req, res) => {
   res.json({
     success: true,
@@ -207,7 +212,12 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-// Start Server locally if not running serverless
+// Catch-all 404 for unmatched API routes (placed strictly after valid routes)
+app.use('/api/*', (req, res) => {
+  res.status(404).json({ message: 'API Route Not Found' });
+});
+
+// Start Server locally if not running serverless on Vercel
 if (!process.env.VERCEL) {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
