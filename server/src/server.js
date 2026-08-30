@@ -26,9 +26,10 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '../.env') });
 dotenv.config();
 
-// Connect Database
-connectDB().then(() => {
-  seedInitialTeam();
+// Connect Database & Run Initial Seeding
+connectDB().then(async () => {
+  await seedInitialTeam();
+  await seedJobs();
 });
 
 const seedInitialTeam = async () => {
@@ -61,55 +62,6 @@ const seedInitialTeam = async () => {
   }
 };
 
-const app = express();
-
-// Middlewares
-const allowedOrigins = [
-  'http://localhost:5176',
-  'http://localhost:5173',
-  process.env.CLIENT_URL
-].filter(Boolean);
-
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin) || origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-}));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Express Session Middleware
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'session_secret_for_passport_auth',
-  resave: false,
-  saveUninitialized: false,
-  cookie: { secure: false } // Set to secure: true in production if HTTPS is active
-}));
-
-app.use(passport.initialize());
-app.use(passport.session());
-
-// Static uploads serving
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/team', teamRoutes);
-app.use('/api/jobs', jobRoutes);
-app.use('/api/contact', contactRoutes);
-
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok' });
-});
-
-// Seed database with jobs if empty
 const seedJobs = async () => {
   try {
     const count = await Job.countDocuments();
@@ -197,9 +149,69 @@ const seedJobs = async () => {
   }
 };
 
-// Start Server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, async () => {
-  console.log(`Server running on port ${PORT}`);
-  await seedJobs();
+const app = express();
+
+// Middlewares
+const allowedOrigins = [
+  'http://localhost:5176',
+  'http://localhost:5173',
+  process.env.CLIENT_URL
+].filter(Boolean);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin) || origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:') || origin.endsWith('.vercel.app')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+}));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Express Session Middleware
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'session_secret_for_passport_auth',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false }
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Static uploads serving
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/team', teamRoutes);
+app.use('/api/jobs', jobRoutes);
+app.use('/api/contact', contactRoutes);
+
+// Root Status & Health Check Route (Fixes 'Cannot GET /')
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Jobizza API is live and running serverless on Vercel!',
+    environment: process.env.NODE_ENV || 'production'
+  });
 });
+
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
+
+// Start Server locally if not running serverless
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+// Export app for Vercel serverless execution
+export default app;
