@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Menu, X, ChevronDown } from 'lucide-react';
+import { Mail, Menu, X, ChevronDown, LogIn, LogOut, LayoutGrid } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 interface NavbarProps {
   onNavigate: (view: string) => void;
+  user?: any;
+  onLogout?: () => void;
 }
 
 interface DropdownItem {
@@ -18,10 +21,11 @@ interface NavLinkItem {
   dropdown?: DropdownItem[];
 }
 
-const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
+const Navbar: React.FC<NavbarProps> = ({ onNavigate, user, onLogout }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeMobileDropdown, setActiveMobileDropdown] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -87,15 +91,19 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
     if (viewId) {
       onNavigate(viewId);
     } else if (href) {
-      onNavigate('home');
-      // If there is an anchor, scroll to it after switching back to home
-      if (href.startsWith('#')) {
-        setTimeout(() => {
-          const el = document.querySelector(href);
-          if (el) {
-            el.scrollIntoView({ behavior: 'smooth' });
-          }
-        }, 120);
+      if (href.startsWith('/')) {
+        navigate(href);
+      } else {
+        onNavigate('home');
+        // If there is an anchor, scroll to it after switching back to home
+        if (href.startsWith('#')) {
+          setTimeout(() => {
+            const el = document.querySelector(href);
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth' });
+            }
+          }, 120);
+        }
       }
     }
   };
@@ -185,14 +193,60 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
                 ))}
               </div>
 
-              {/* Mobile Menu Button */}
-              <div className="md:hidden">
-                <button
-                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                  className="text-slate-300 hover:text-white focus:outline-none"
-                >
-                  {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-                </button>
+              {/* Right Side Actions Container */}
+              <div className="flex items-center gap-4">
+                {/* Dynamic Auth Button/Dropdown (Visible on all viewports) */}
+                <div>
+                  {!user ? (
+                    <button
+                      onClick={() => navigate('/login')}
+                      className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 py-2 sm:px-5 sm:py-2.5 rounded-full transition-all text-xs sm:text-sm shadow-md"
+                    >
+                      <LogIn size={14} className="sm:w-4 sm:h-4" />
+                      <span>Login</span>
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      {/* Pill Card */}
+                      <button
+                        onClick={() => navigate(user.role === 'admin' ? '/admin' : '/dashboard')}
+                        className="flex items-center gap-2 bg-white border border-slate-200 shadow-sm rounded-2xl p-1 px-3 hover:bg-slate-50 transition-all cursor-pointer font-bold text-slate-800"
+                      >
+                        {/* Rounded square avatar */}
+                        <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-rose-700 text-white font-black text-sm overflow-hidden shrink-0">
+                          {user.profileImage ? (
+                            <img src={user.profileImage} alt={user.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <span>{user.name ? user.name[0].toUpperCase() : 'A'}</span>
+                          )}
+                        </div>
+                        {/* Grid Icon */}
+                        <LayoutGrid size={16} className="text-slate-500" />
+                        {/* Dashboard Text */}
+                        <span className="text-xs sm:text-sm tracking-tight text-[#1e293b]">Dashboard</span>
+                      </button>
+
+                      {/* LogOut button */}
+                      <button
+                        onClick={onLogout}
+                        className="p-2 text-slate-400 hover:text-slate-600 transition-colors"
+                        title="Sign Out"
+                      >
+                        <LogOut size={18} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Mobile Menu Button */}
+                <div className="md:hidden">
+                  <button
+                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    className="text-slate-300 hover:text-white focus:outline-none"
+                  >
+                    {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -249,6 +303,51 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
                   )}
                 </div>
               ))}
+            </div>
+
+            {/* Mobile Auth Actions */}
+            <div className="border-t border-slate-800 pt-4 mt-4">
+              {!user ? (
+                <button
+                  onClick={() => { setIsMobileMenuOpen(false); navigate('/login'); }}
+                  className="flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition-all text-sm w-full"
+                >
+                  <LogIn size={16} />
+                  Login to Portal
+                </button>
+              ) : (
+                <div className="flex items-center justify-between bg-slate-900/50 p-3 rounded-2xl border border-slate-800">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-rose-700 text-white font-bold text-sm overflow-hidden shrink-0">
+                      {user.profileImage ? (
+                        <img src={user.profileImage} alt={user.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <span>{user.name ? user.name[0].toUpperCase() : 'A'}</span>
+                      )}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold text-slate-200 leading-tight">{user.name}</span>
+                      <span className="text-[10px] text-slate-400 font-medium capitalize mt-0.5">{user.role}</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => { setIsMobileMenuOpen(false); navigate(user.role === 'admin' ? '/admin' : '/dashboard'); }}
+                      className="p-2.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl transition-all"
+                      title="Dashboard"
+                    >
+                      <LayoutGrid size={16} />
+                    </button>
+                    <button
+                      onClick={() => { setIsMobileMenuOpen(false); onLogout?.(); }}
+                      className="p-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl transition-all"
+                      title="Sign Out"
+                    >
+                      <LogOut size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
         )}

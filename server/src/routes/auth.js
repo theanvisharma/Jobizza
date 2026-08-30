@@ -13,6 +13,15 @@ const generateToken = (id) => {
   });
 };
 
+// URL Sanitization helper to prevent double slashes in OAuth callbacks
+const cleanAppUrl = (url) => {
+  if (!url) return '';
+  return url.endsWith('/') ? url.slice(0, -1) : url;
+};
+
+const appUrl = cleanAppUrl(process.env.APP_URL) || 'http://localhost:5000';
+const linkedinCallbackUrl = process.env.LINKEDIN_CALLBACK_URL || `${appUrl}/api/auth/linkedin/callback`;
+
 // --- LinkedIn Passport Setup ---
 const hasLinkedInCredentials =
   process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET;
@@ -23,7 +32,7 @@ if (hasLinkedInCredentials) {
       {
         clientID: process.env.LINKEDIN_CLIENT_ID,
         clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
-        callbackURL: process.env.LINKEDIN_CALLBACK_URL || 'http://localhost:5000/api/auth/linkedin/callback',
+        callbackURL: linkedinCallbackUrl,
         scope: ['r_emailaddress', 'r_liteprofile'],
         state: true,
       },

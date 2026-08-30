@@ -18,20 +18,70 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: function () {
-        // Only require password if not signing up via OAuth
-        return !this.linkedinId;
-      },
       minlength: [6, 'Password must be at least 6 characters'],
     },
     linkedinId: {
       type: String,
-      sparse: true, // Allow multiple nulls for non-linkedin users
+      sparse: true,
+    },
+    googleId: {
+      type: String,
+      sparse: true,
+    },
+    company: {
+      type: String,
+      default: '',
+    },
+    linkedin: {
+      type: String,
+      default: '',
+    },
+    city: {
+      type: String,
+      default: '',
+    },
+    pincode: {
+      type: String,
+      default: '',
+    },
+    position: {
+      type: String,
+      default: '',
+    },
+    dob: {
+      type: Date,
+    },
+    profileImage: {
+      type: String,
+      default: '',
     },
     role: {
       type: String,
-      enum: ['user', 'admin'],
-      default: 'user',
+      enum: ['member', 'admin'],
+      default: 'member',
+    },
+    isMainAdmin: {
+      type: Boolean,
+      default: false,
+    },
+    profileComplete: {
+      type: Boolean,
+      default: false,
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'accepted', 'rejected'],
+      default: 'pending',
+    },
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    otp: {
+      type: String,
+    },
+    otpExpires: {
+      type: Date,
     },
   },
   {
@@ -39,9 +89,9 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// Encrypt password using bcrypt
+// Encrypt password using bcrypt if modified
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) {
+  if (!this.isModified('password') || !this.password) {
     return next();
   }
   const salt = await bcrypt.genSalt(10);
