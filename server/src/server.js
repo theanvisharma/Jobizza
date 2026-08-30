@@ -178,7 +178,9 @@ app.use(session({
   saveUninitialized: false,
   cookie: { secure: false }
 }));
-
+app.use('/api/*', (req, res) => {
+  res.status(404).json({ message: 'API Route Not Found' });
+});
 app.use(passport.initialize());
 app.use(passport.session());
 
